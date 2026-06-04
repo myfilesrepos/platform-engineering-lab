@@ -1,0 +1,16 @@
+# Terraform state - contains sensitive data
+*.tfstate
+*.tfstate.*
+.terraform.tfstate*
+.terraform.tfstate.lock.info
+
+# Terraform working directory
+.terraform/
+
+# Sensitive variable files - use environment variables instead
+terraform.tfvars
+*.auto.tfvars
+
+# OS artifacts
+.DS_Store
+Thumbs.db

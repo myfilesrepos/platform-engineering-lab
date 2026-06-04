@@ -1,0 +1,217 @@
+image: hashicorp/terraform:1.10.0
+
+stages:
+  - validate
+  - security
+  - plan
+  - deploy-dev
+  - deploy-prod
+  - release
+  - notify
+
+variables:
+  TF_IN_AUTOMATION: "true"
+  AWS_REGION: "eu-west-1"
+  AWS_ROLE_ARN: $AWS_ROLE_ARN
+
+id_tokens:
+  AWS_OIDC_TOKEN:
+    aud: https://gitlab.com
+
+# ── Reusable anchors ────────────────────────────────────────────────────────
+
+.aws_auth: &aws_auth
+  - >
+    export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s"
+    $(aws sts assume-role-with-web-identity
+    --role-arn $AWS_ROLE_ARN
+    --role-session-name "gitlab-ci-$CI_JOB_ID"
+    --web-identity-token $AWS_OIDC_TOKEN
+    --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]"
+    --output text))
+
+.notify_slack: &notify_slack
+  - |
+    curl -s -X POST "$SLACK_WEBHOOK_URL" \
+    -H 'Content-type: application/json' \
+    --data "{
+      \"text\": \"$SLACK_MSG\",
+      \"attachments\": [{
+        \"color\": \"$SLACK_COLOR\",
+        \"fields\": [
+          {\"title\": \"Project\", \"value\": \"$CI_PROJECT_NAME\", \"short\": true},
+          {\"title\": \"Environment\", \"value\": \"$ENV_NAME\", \"short\": true},
+          {\"title\": \"Triggered by\", \"value\": \"$GITLAB_USER_NAME\", \"short\": true},
+          {\"title\": \"Commit\", \"value\": \"$CI_COMMIT_SHORT_SHA\", \"short\": true},
+          {\"title\": \"Pipeline\", \"value\": \"$CI_PIPELINE_URL\", \"short\": false}
+        ]
+      }]
+    }"
+
+# ── Validate ─────────────────────────────────────────────────────────────────
+
+validate:
+  stage: validate
+  before_script:
+    - terraform init
+  script:
+    - terraform fmt -check
+    - terraform validate
+
+# ── Security scan ─────────────────────────────────────────────────────────────
+
+tfsec:
+  stage: security
+  image: aquasec/tfsec:latest
+  before_script: []
+  script:
+    - tfsec . --format lovely
+  allow_failure: false
+
+# ── Plan ──────────────────────────────────────────────────────────────────────
+
+plan-dev:
+  stage: plan
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select dev || terraform workspace new dev
+    - terraform plan -var-file=environments/dev.tfvars -out=dev.tfplan
+  artifacts:
+    paths:
+      - dev.tfplan
+    expire_in: 1 hour
+
+plan-prod:
+  stage: plan
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select prod || terraform workspace new prod
+    - terraform plan -var-file=environments/prod.tfvars -out=prod.tfplan
+  artifacts:
+    paths:
+      - prod.tfplan
+    expire_in: 1 hour
+  only:
+    - main
+
+# ── Deploy dev ────────────────────────────────────────────────────────────────
+
+deploy-dev:
+  stage: deploy-dev
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select dev
+    - terraform apply -auto-approve dev.tfplan
+  environment:
+    name: dev
+  only:
+    - dev
+    - main
+
+# ── Deploy prod ───────────────────────────────────────────────────────────────
+
+deploy-prod:
+  stage: deploy-prod
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select prod
+    - terraform apply -auto-approve prod.tfplan
+  environment:
+    name: prod
+  when: manual
+  only:
+    - main
+
+# ── Rollback prod ─────────────────────────────────────────────────────────────
+
+rollback-prod:
+  stage: deploy-prod
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select prod
+    - terraform apply -var-file=environments/prod.tfvars -auto-approve
+  environment:
+    name: prod
+    action: stop
+  when: manual
+  only:
+    - main
+
+# ── Release ───────────────────────────────────────────────────────────────────
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  before_script: []
+  script:
+    - echo "Creating release $CI_COMMIT_TAG"
+  release:
+    tag_name: $CI_COMMIT_TAG
+    name: "Release $CI_COMMIT_TAG"
+    description: |
+      ## Deployment
+      - **Environment:** production
+      - **Commit:** $CI_COMMIT_SHORT_SHA
+      - **Triggered by:** $GITLAB_USER_NAME
+      - **Pipeline:** $CI_PIPELINE_URL
+  only:
+    - tags
+
+# ── Notifications ─────────────────────────────────────────────────────────────
+
+notify-success:
+  stage: notify
+  image: alpine/curl:latest
+  before_script: []
+  variables:
+    SLACK_MSG: ":white_check_mark: Deploy succeeded"
+    SLACK_COLOR: "good"
+    ENV_NAME: "prod"
+  script:
+    - *notify_slack
+  when: on_success
+  only:
+    - main
+
+notify-failure:
+  stage: notify
+  image: alpine/curl:latest
+  before_script: []
+  variables:
+    SLACK_MSG: ":red_circle: Deploy FAILED"
+    SLACK_COLOR: "danger"
+    ENV_NAME: "prod"
+  script:
+    - *notify_slack
+  when: on_failure
+  only:
+    - main
+
+# ── Drift detection (scheduled pipeline) ─────────────────────────────────────
+
+drift-detection:
+  stage: plan
+  before_script:
+    - *aws_auth
+    - terraform init
+  script:
+    - terraform workspace select prod
+    - |
+      terraform plan -var-file=environments/prod.tfvars -detailed-exitcode
+      EXIT_CODE=$?
+      if [ $EXIT_CODE -eq 2 ]; then
+        echo "DRIFT DETECTED — infrastructure has changed outside of Terraform"
+        exit 1
+      fi
+  only:
+    - schedules
