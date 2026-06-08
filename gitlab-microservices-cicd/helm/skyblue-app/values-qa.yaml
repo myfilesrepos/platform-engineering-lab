@@ -1,0 +1,59 @@
+environment: qa
+replicaCount: 2
+
+image:
+  tag: latest
+
+
+service:
+  type: NodePort
+  nodePort: 30001
+
+services:
+  gateway:
+    replicaCount: 2
+    env:
+      LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  users:
+    replicaCount: 2
+    env:
+      ENV: "qa"
+      LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  orders:
+    replicaCount: 2
+    env:
+      ENV: "qa"
+      LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+logLevel: INFO
+
+config:
+  ENVIRONMENT: "qa"
+  LOG_LEVEL: "INFO"
+
+autoscaling:
+  enabled: false
+
+
+testingEnabled: true

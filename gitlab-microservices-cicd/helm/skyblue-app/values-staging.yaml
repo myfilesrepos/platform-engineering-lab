@@ -1,0 +1,73 @@
+### Configuration for STAGING
+environment: staging
+replicaCount: 1
+
+image:
+  tag: latest
+  pullPolicy: Always  ### Toujours récupérer la dernière image
+
+# Service principal avec NodePort STAGING
+service:
+  type: NodePort
+  nodePort: 30002
+
+services:
+  gateway:
+    replicaCount: 1
+    env:
+      LOG_LEVEL: "INFO"
+      WORKERS: "2"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    healthCheck:
+      liveness:
+        initialDelaySeconds: 45
+        periodSeconds: 15
+      readiness:
+        initialDelaySeconds: 10
+        periodSeconds: 10
+  users:
+    replicaCount: 1
+    env:
+      ENV: "staging"
+      LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+  orders:
+    replicaCount: 2
+    env:
+      ENV: "staging"
+      LOG_LEVEL: "INFO"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "200m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+logLevel: INFO
+
+config:
+  ENVIRONMENT: "staging"
+  LOG_LEVEL: "INFO"
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+
+monitoring:
+  enabled: true

@@ -1,0 +1,145 @@
+replicaCount: 1
+
+image:
+  repository: nguetsop
+  tag: latest
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+services:
+  gateway:
+    name: gateway
+    port: 8000
+    targetPort: 8000
+    type: NodePort
+    replicaCount: 1
+    enabled: true
+    env:
+      PYTHONPATH: "/app"
+    healthCheck:
+      liveness:
+        path: "/"
+        initialDelaySeconds: 45
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        path: "/"
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 3
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  
+  users:
+    name: users
+    port: 8000
+    targetPort: 8000
+    type: ClusterIP
+    replicaCount: 1
+    enabled: true
+    env:
+      ENV: "development"
+      PYTHONPATH: "/app"
+    healthCheck:
+      liveness:
+        path: "/"
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        path: "/"
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 3
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    
+  orders:
+    name: orders
+    port: 8000
+    targetPort: 8000
+    type: ClusterIP
+    replicaCount: 1
+    enabled: true
+    env:
+      ENV: "development"
+      PYTHONPATH: "/app"
+    healthCheck:
+      liveness:
+        path: "/"
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readiness:
+        path: "/"
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        timeoutSeconds: 3
+        failureThreshold: 3
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+global:
+  environment: development
+  gitCommit: ""
+  gitBranch: ""
+
+service:
+  type: NodePort
+  port: 8000
+  targetPort: 8000
+  nodePort: 30000
+
+environment: development
+logLevel: INFO
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+networkPolicy:
+  enabled: false
+
+serviceAccount:
+  create: false
+  name: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+config: {}
+secrets: {}

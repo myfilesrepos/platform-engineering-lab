@@ -1,0 +1,16 @@
+apiVersion: v2
+name: skyblue-app
+description: A Helm chart for SkyBlue microservices application (DataScientest project)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - microservices
+  - fastapi
+  - devops
+maintainers:
+  - name: "nntamo"
+    email: "nntamo@skyblue.com"
+
+
+    

@@ -1,0 +1,119 @@
+{{- range $serviceName, $service := .Values.services }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $serviceName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ $serviceName }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version | replace "+" "_" }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
+    component: {{ $serviceName }}
+    environment: {{ $.Values.environment }}
+spec:
+  replicas: {{ $service.replicaCount | default $.Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $serviceName }}
+      release: {{ $.Release.Name }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: {{ $serviceName }}
+        release: {{ $.Release.Name }}
+        component: {{ $serviceName }}
+        version: {{ $.Values.image.tag }}
+        environment: {{ $.Values.environment }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ $service.targetPort }}"
+        prometheus.io/path: "/metrics"
+    spec:
+      {{- if $.Values.serviceAccount.create }}
+      serviceAccountName: {{ $.Values.serviceAccount.name | default "default" }}
+      {{- end }}
+      {{- if $.Values.securityContext }}
+      securityContext:
+        {{- toYaml $.Values.securityContext | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ $serviceName }}
+        image: "{{ $.Values.image.repository }}/skyblue-{{ $serviceName }}:{{ $.Values.image.tag }}"
+        imagePullPolicy: {{ $.Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ $service.targetPort }}
+          protocol: TCP
+        env:
+        - name: ENV
+          value: {{ $.Values.environment }}
+        - name: SERVICE_NAME
+          value: {{ $serviceName }}
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        {{- if $service.env }}
+        {{- range $key, $value := $service.env }}
+        - name: {{ $key }}
+          value: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        resources:
+          {{- if $service.resources }}
+          {{- toYaml $service.resources | nindent 10 }}
+          {{- else }}
+          {{- toYaml $.Values.resources | nindent 10 }}
+          {{- end }}
+        livenessProbe:
+          httpGet:
+            path: {{ $service.healthCheck.liveness.path | default "/" }}
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: {{ $service.healthCheck.liveness.initialDelaySeconds | default 30 }}
+          periodSeconds: {{ $service.healthCheck.liveness.periodSeconds | default 10 }}
+          timeoutSeconds: {{ $service.healthCheck.liveness.timeoutSeconds | default 5 }}
+          failureThreshold: {{ $service.healthCheck.liveness.failureThreshold | default 3 }}
+        readinessProbe:
+          httpGet:
+            path: {{ $service.healthCheck.readiness.path | default "/" }}
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: {{ $service.healthCheck.readiness.initialDelaySeconds | default 5 }}
+          periodSeconds: {{ $service.healthCheck.readiness.periodSeconds | default 5 }}
+          timeoutSeconds: {{ $service.healthCheck.readiness.timeoutSeconds | default 3 }}
+          failureThreshold: {{ $service.healthCheck.readiness.failureThreshold | default 3 }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if $.Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- range $.Values.image.pullSecrets }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+{{- end }}

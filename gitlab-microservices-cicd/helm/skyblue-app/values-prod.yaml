@@ -1,0 +1,123 @@
+environment: production
+replicaCount: 1
+
+image:
+  tag: latest
+  pullPolicy: Always
+
+
+service:
+  type: NodePort
+  nodePort: 30003
+
+services:
+  gateway:
+    replicaCount: 1
+    env:
+      LOG_LEVEL: "WARNING"
+      WORKERS: "4"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    healthCheck:
+      liveness:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+        timeoutSeconds: 10
+        failureThreshold: 3
+      readiness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+  users:
+    replicaCount: 1
+    env:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    healthCheck:
+      liveness:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+      readiness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+  orders:
+    replicaCount: 1
+    env:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "300m"
+      limits:
+        memory: "1Gi"
+        cpu: "1000m"
+    healthCheck:
+      liveness:
+        initialDelaySeconds: 60
+        periodSeconds: 15
+      readiness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+
+logLevel: WARNING
+
+config:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "WARNING"
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+networkPolicy:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: skyblue-prod-sa
+
+# Affinité pour distribuer les pods sur différents nœuds
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - gateway
+            - users  
+            - orders
+        topologyKey: kubernetes.io/hostname
+
+# Sécurité renforcée en production
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+# Monitoring et logging en production
+monitoring:
+  enabled: true
+logging:
+  enabled: true
+  level: WARNING

@@ -1,7 +1,16 @@
-#### ▶️ [DevOps](./DevOps/DevOps-App/README.md)
-#### ▶️ [DevOps-für-Machine-Learning](./DevOps/cicd-pipeline/README.md)
-#### ▶️ [MLOps Central CI/CD - Multi-Cloud](./mlops-multicloud-cicd/README.md)
-#### ▶️ [Monitoring Stack — Prometheus & Grafana](./monitoring-stack-prometheus-grafana/readme.md)
-#### ▶️ [Monitoring as Code — Kubernetes + Datadog](./Monitoring_as_Code/README.md)
+# Platform Engineering Lab
 
+Eine Sammlung praxisnaher Platform-Engineering-Projekte aus den Bereichen DevOps, MLOps, Data Engineering und Cloud-Infrastruktur. Jedes Projekt zeigt eine vollständige Implementierung mit modernen Tools und Best Practices auf AWS und Azure.
 
+---
+
+#### ▶️ [Data Engineering & Analytics - Azure Medallion Architecture](./data-engineering/README.md)
+#### ▶️ [CI/CD Pipeline to Kubernetes - Jenkins · AWS EC2 · Ansible](./devops/DevOps-App/README.md)
+#### ▶️ [Azure DevOps - IoT & ML Data Platform](./devops/cicd-pipeline/README.md)
+#### ▶️ [Datastreaming & Services - CI/CD · Kafka · PostgreSQL](./devops-data-platform/README.md)
+#### ▶️ [Microservices CI/CD - Gateway · Orders · Users · Helm · Kubernetes](./gitlab-microservices-cicd/README.md)
+#### ▶️ [MLOps Multi-Cloud - AWS · Azure · GCP · OIDC Keyless Auth](./mlops-multicloud-cicd/README.md)
+#### ▶️ [Monitoring Stack - Prometheus · Grafana · Alertmanager](./monitoring-prometheus-grafana/readme.md)
+#### ▶️ [Monitoring as Code - Kubernetes · Datadog · Terraform · Helm](./monitoring-as-code/README.md)
+#### ▶️ [Data Platform Engineering](./data-platform-engineering/README.md)
+#### ▶️ [MLOps Architecture Diagram](./MLOps-Engineering/Arhitectur/README.md)
