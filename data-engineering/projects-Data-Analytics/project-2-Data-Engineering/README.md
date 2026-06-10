@@ -1,4 +1,4 @@
-# Open-Source Platform - Echtzeit-Datenverarbeitung
+# Streaming Data Platform - Kafka · Spark · PostgreSQL · Docker
 
 Modulare Data-Engineering-Plattform für Echtzeit-Ingestion, -Verarbeitung und -Visualisierung - ausschließlich Open-Source-Komponenten, containerisiert mit Docker Compose.
 
