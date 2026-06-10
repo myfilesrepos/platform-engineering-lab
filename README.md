@@ -18,7 +18,7 @@ Eine Sammlung praxisnaher Platform-Engineering-Projekte aus den Bereichen DevOps
 #### ▶️ [Data Engineering & Analytics - Azure Medallion Architecture](./data-engineering/README.md)
 #### ▶️ [Data Platform Engineering - Azure · Lakehouse · dbt · Synapse](./data-platform-engineering/README.md)
 
-## MLOps Engineering & Architecture
+## MLOps Engineering & Architektur
 
 #### ▶️ [MLOps Multi-Cloud - AWS · Azure · OIDC Keyless Auth](./mlops-multicloud-cicd/README.md)
 #### ▶️ [Enterprise MLOps Engineering - Architektur & Infrastruktur](./MLOps-Engineering/Arhitectur/README.md)
